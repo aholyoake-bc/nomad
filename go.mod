@@ -9,7 +9,6 @@ replace (
 	github.com/apparentlymart/go-textseg/v12 => github.com/apparentlymart/go-textseg/v12 v12.0.0
 	github.com/hashicorp/go-discover => github.com/hashicorp/go-discover v0.0.0-20210818145131-c573d69da192
 	github.com/hashicorp/hcl => github.com/hashicorp/hcl v1.0.1-0.20201016140508-a07e7d50bbee
-	github.com/kr/pty => github.com/kr/pty v1.1.5
 )
 
 // Nomad is built using the current source of the API module
@@ -29,6 +28,7 @@ require (
 	github.com/containernetworking/plugins v0.7.3-0.20190501191748-2d6d46d308b2
 	github.com/coreos/go-iptables v0.4.3-0.20190724151750-969b135e941d
 	github.com/coreos/go-semver v0.3.0
+	github.com/creack/pty v1.1.17
 	github.com/docker/cli v0.0.0-20200303215952-eb310fca4956
 	github.com/docker/distribution v2.7.1+incompatible
 	github.com/docker/docker v17.12.0-ce-rc1.0.20200330121334-7f8b4b621b5d+incompatible
@@ -84,7 +84,6 @@ require (
 	github.com/hashicorp/yamux v0.0.0-20181012175058-2f1d1f20f75d
 	github.com/hpcloud/tail v1.0.1-0.20170814160653-37f427138745
 	github.com/kr/pretty v0.3.0
-	github.com/kr/pty v1.1.5
 	github.com/kr/text v0.2.0
 	github.com/mattn/go-colorable v0.1.9
 	github.com/miekg/dns v1.1.26
