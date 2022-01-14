@@ -84,6 +84,10 @@ Plan Options:
     has been supplied which is not defined within the root variables. Defaults
     to true.
 
+  -log-scheduler-events
+    Sets the flag to log scheduler events to get more information about
+    scheduler warnings. The log output may be very large.
+
   -policy-override
     Sets the flag to force override any soft mandatory Sentinel policies.
 
@@ -106,13 +110,14 @@ func (c *JobPlanCommand) Synopsis() string {
 func (c *JobPlanCommand) AutocompleteFlags() complete.Flags {
 	return mergeAutocompleteFlags(c.Meta.AutocompleteFlags(FlagSetClient),
 		complete.Flags{
-			"-diff":            complete.PredictNothing,
-			"-policy-override": complete.PredictNothing,
-			"-verbose":         complete.PredictNothing,
-			"-hcl1":            complete.PredictNothing,
-			"-hcl2-strict":     complete.PredictNothing,
-			"-var":             complete.PredictAnything,
-			"-var-file":        complete.PredictFiles("*.var"),
+			"-diff":                 complete.PredictNothing,
+			"-log-scheduler-events": complete.PredictNothing,
+			"-policy-override":      complete.PredictNothing,
+			"-verbose":              complete.PredictNothing,
+			"-hcl1":                 complete.PredictNothing,
+			"-hcl2-strict":          complete.PredictNothing,
+			"-var":                  complete.PredictAnything,
+			"-var-file":             complete.PredictFiles("*.var"),
 		})
 }
 
@@ -122,12 +127,13 @@ func (c *JobPlanCommand) AutocompleteArgs() complete.Predictor {
 
 func (c *JobPlanCommand) Name() string { return "job plan" }
 func (c *JobPlanCommand) Run(args []string) int {
-	var diff, policyOverride, verbose, hcl2Strict bool
+	var diff, logSchedulerEvents, policyOverride, verbose, hcl2Strict bool
 	var varArgs, varFiles flaghelper.StringFlag
 
 	flagSet := c.Meta.FlagSet(c.Name(), FlagSetClient)
 	flagSet.Usage = func() { c.Ui.Output(c.Help()) }
 	flagSet.BoolVar(&diff, "diff", true, "")
+	flagSet.BoolVar(&logSchedulerEvents, "log-scheduler-events", false, "")
 	flagSet.BoolVar(&policyOverride, "policy-override", false, "")
 	flagSet.BoolVar(&verbose, "verbose", false, "")
 	flagSet.BoolVar(&c.JobGetter.hcl1, "hcl1", false, "")
@@ -176,6 +182,9 @@ func (c *JobPlanCommand) Run(args []string) int {
 	opts := &api.PlanOptions{}
 	if diff {
 		opts.Diff = true
+	}
+	if logSchedulerEvents {
+		opts.LogSchedulerEvents = true
 	}
 	if policyOverride {
 		opts.PolicyOverride = true
@@ -253,6 +262,10 @@ func (c *JobPlanCommand) outputPlannedJob(job *api.Job, resp *api.JobPlanRespons
 	c.Ui.Output("")
 
 	// Print any warnings if there are any
+	if resp.SchedulerWarnings != "" {
+		c.Ui.Output(
+			c.Colorize().Color(fmt.Sprintf("[bold]Scheduler Warnings:\n[yellow]%s[reset]\n", resp.SchedulerWarnings)))
+	}
 	if resp.Warnings != "" {
 		c.Ui.Output(
 			c.Colorize().Color(fmt.Sprintf("[bold][yellow]Job Warnings:\n%s[reset]\n", resp.Warnings)))

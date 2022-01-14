@@ -2,6 +2,7 @@ package nomad
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"
@@ -1785,13 +1786,51 @@ func (j *Job) Plan(args *structs.JobPlanRequest, reply *structs.JobPlanResponse)
 	}
 
 	// Create the scheduler and run it
-	sched, err := scheduler.NewScheduler(eval.Type, j.logger, nil, snap, planner)
+	schedEventsCh := make(chan interface{}, 1)
+	sched, err := scheduler.NewScheduler(eval.Type, j.logger, schedEventsCh, snap, planner)
 	if err != nil {
 		return err
 	}
 
 	if err := sched.Process(eval); err != nil {
 		return err
+	}
+
+	// Consume any events sent by the scheduler
+	schedWarnings := []string{}
+OUTER:
+	for {
+		select {
+		case e := <-schedEventsCh:
+			switch event := e.(type) {
+			case *scheduler.PortCollisionEvent:
+				if event == nil || event.Node == nil {
+					continue
+				}
+
+				if args.LogSchedulerEvents {
+					eventJson, err := json.Marshal(event)
+					if err == nil {
+						j.logger.Warn(
+							"unexpected node port collision, refer to https://www.nomadproject.io/s/port-plan-failure for more information",
+							"node_id", event.Node.ID, "reason", event.Reason, "event", string(eventJson))
+					}
+				}
+
+				schedWarnings = append(schedWarnings, fmt.Sprintf(
+					"- Unexpected port collision on node %q.",
+					event.Node.ID))
+			}
+		default:
+			break OUTER
+		}
+	}
+
+	if len(schedWarnings) > 0 {
+		if args.LogSchedulerEvents {
+			schedWarnings = append(schedWarnings, "Refer to the Nomad server logs for more information.")
+		}
+		reply.SchedulerWarnings = strings.Join(schedWarnings, "\n")
 	}
 
 	// Annotate and store the diff
